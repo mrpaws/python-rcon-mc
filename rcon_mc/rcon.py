@@ -159,6 +159,15 @@ class Rcon:
         break
       if msg_size > 0:
         pmsg = payload[3] 
+        ''' The following check is an unfortunate workaround because
+            Minecraft does not seem to conform to Source RCON Protocol.
+            Protocol states that the remote system should mirror the 
+            client's SERVER_DATA_RESPONSE request, which is the
+            recommended methofd for testing for multi-packet responses. 
+            Minecraft will return "Unknown request 0. Open issue on this
+            Github project repo
+        '''
+         
         if pmsg == "Unknown request 0":
           break
         msg = msg + pmsg
