@@ -25,6 +25,13 @@ Module rcon/rcon.py provides an interface for general interaction with any Sourc
 
 The code within is written by somewhat of a Python newbie and is more of a fun learning project than anything else. However, due diligence has been taken to ensure functionality and reusability should anyone want to interface with a minecraft server.  See below for testing information. 
 
+The primary objectives are to spend time:
+ - Coding in python
+ - Learning about core python modules
+ - Spend time refreshing networking routines
+ - Deliver a useful tool for another minecraft deploy manager
+ - Produce some reusables for a personal standard library
+
 Testing
 ========
 A wrapper script - test.py - is provided to demonstrate general usage and test functionality on your system/Python.  Below are individual confirmed test cases.
