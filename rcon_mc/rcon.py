@@ -137,8 +137,7 @@ class Rcon:
   def receive(self):
     '''Read responses from the socket and unpack them'''
     msg=""
-    read=1
-    while read==1:
+    while 1:
       payload = ""
       try:
         unpack_fmt="<iiixx" ## empty body packet format
@@ -156,13 +155,11 @@ class Rcon:
       pid = payload[1]
       ptype = payload[2]
       if ptype == SERVERDATA_AUTH_RESPONSE:
-        read=0
         msg=""
         break
       if msg_size > 0:
         pmsg = payload[3] 
         if pmsg == "Unknown request 0":
-          read = 0
           break
         msg = msg + pmsg
     return msg
