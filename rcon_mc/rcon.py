@@ -169,7 +169,7 @@ class Rcon:
 
   def rcon(self, command):
     '''Higher level function that manages message id matching'''
-    self.send(3,self.password)
-    self.receive()
-    self.send(2,command)
+    self.send(SERVERDATA_AUTH,self.password) ## authenticate
+    self.receive() 
+    self.send(SERVERDATA_EXECCOMMAND,command) ## command
     return self.receive()
