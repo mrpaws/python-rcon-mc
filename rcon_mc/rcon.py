@@ -2,11 +2,11 @@
 '''
  rcon.py - RCON protocol interface module
  Author:
-   paws
+   mrpaws
  Project Repo:
+   https://github.com/mrpaws/python-rcon-mc
  Protocol: 
    https://developer.valvesoftware.com/wiki/Source_RCON_Protocol
- TODO: verify math for packets
 '''
 
 import struct
