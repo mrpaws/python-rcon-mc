@@ -35,6 +35,9 @@ A wrapper script - test.py - is provided to demonstrate general usage and test f
 ============
 The RCON protocol does not support SSL and therefore the code is best used when connecting to localhost.  That is, it is run on the same machine and does not need to make any network hops.  The password to the rcon server is transmitted in clear text and can be extracted by any intermediary systems. Exceptions may apply such as connecting to systems on a trusted LAN (home network) or encrypted VPN connection on a trusted network.
 
+There are some conceivable workarounds for this problem, the simplest probably involving reverse proxying.  Because the RCON protocol should not mirror the admin password back to the client, an encrypted tunnel from the client end to a reverse proxy engine on the serverside could exist to mask the initial password transmission accompanied with opening and maintaining RCON TCP sessions.  After the initial handshake, the server responds in plain text.  The reverse proxy can detect when receiving SSL encrypted transmissions, and passthrough clear text transmissions.
+
+
 
 Whodunit
 ======
