@@ -34,6 +34,6 @@ A wrapper script - test.py - is provided to demonstrate general usage and test f
 The RCON protocol does not support SSL and therefore the code is best used when connecting to localhost.  That is, it is run on the same machine and does not need to make any network hops.  The password to the rcon server is transmitted in clear text and can be extracted by any intermediary systems. Exceptions may apply such as connecting to systems on a trusted LAN (home network) or encrypted VPN connection on a trusted network.
 
 
-Credit
+Whodunit
 ======
 Again, this is a learning project, but constructive criticism or push requests are welcome!  If you wish to reach the owner, contact paws@delimitize.com .
