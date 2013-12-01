@@ -114,11 +114,6 @@ class Rcon:
       return False
     size = msg_len + MIN_PACKET_SIZE
     self.id = self.id+1
-
-    '''
-     feels like I should be able to do this in one pack call? i.e. '<i<i<i', but works
-      packet = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) +  msg + NULL + NULL
-    '''
     try: 
       packet = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) +  msg + NULL + NULL
     except(struct.error) as ret_val:
@@ -129,22 +124,48 @@ class Rcon:
     except(socket.error) as ret_val:
       raise RconSocketException("Send failure: " + str(ret_val))
       return False
+    if type == 2:
+      try: 
+        ''' send an empty packet after each command to use as a terminator for a command response transaction'''
+        packet = struct.pack('<i', 10) + struct.pack('<i', self.id) + struct.pack('<i', 0) +  NULL + NULL
+        self.connection.send(packet)
+      except(socket.error) as ret_val:
+        raise RconSocketException("Send failure: " + str(ret_val))
+        return False
     return True
 
   def receive(self):
     '''Read responses from the socket and unpack them'''
-    unpack_fmt="<iiixx" ## empty body packet format
-    try:
-      packet = self.connection.recv(MAX_PACKET_SIZE)
-    except(socket.error) as ret_val:
-      self._manage_socket_error(ret_val)
-      raise RconSocketException("Failed to receive data from socket:" + str(self.error_stack))
-      return False
-    msg_size = len(packet) - MIN_PACKET_ACTUAL_SIZE 
-    if msg_size > 0:
-      unpack_fmt = "<iii" + str(msg_size) + "sxx"
-    payload = struct.unpack(unpack_fmt, packet)
-    return payload
+    msg=""
+    read=1
+    while read==1:
+      payload = ""
+      try:
+        unpack_fmt="<iiixx" ## empty body packet format
+        packet = self.connection.recv(MAX_PACKET_SIZE)
+      except(socket.error) as ret_val:
+        self._manage_socket_error(ret_val)
+        raise RconSocketException("Failed to receive data from socket:" + str(self.error_stack))
+        return False
+      packet_size=len(packet)
+      msg_size = packet_size - MIN_PACKET_ACTUAL_SIZE 
+      if msg_size > 0:
+        unpack_fmt = "<iii" + str(msg_size) + "sxx"
+      payload = struct.unpack(unpack_fmt, packet)
+      psize  =payload[0]
+      pid = payload[1]
+      ptype = payload[2]
+      if ptype == SERVERDATA_AUTH_RESPONSE:
+        read=0
+        msg=""
+        break
+      if msg_size > 0:
+        pmsg = payload[3] 
+        if pmsg == "Unknown request 0":
+          read = 0
+          break
+        msg = msg + pmsg
+    return msg
 
   def rcon(self, command):
     '''Higher level function that manages message id matching'''
