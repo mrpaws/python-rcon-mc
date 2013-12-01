@@ -4,7 +4,7 @@ python-rcon-mc
 ** This project is not yet released and is worked on time permitting**
 
 Genral Python API for interacting with RCON servers, specifically for use with Minecraft
-  by Paws
+
 
 ** This is primarily a learning project**
 
@@ -28,7 +28,9 @@ The code within is written by somewhat of a Python newbie and is more of a fun l
 The primary objectives are to spend time:
  - Coding in python
  - Learning about core python modules
- - Spend time refreshing networking routines
+ - Refreshing networking routine
+ - 
+And less importantly:
  - Deliver a useful tool for another minecraft deploy manager
  - Produce some reusables for a personal standard library
 
