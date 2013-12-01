@@ -37,7 +37,19 @@ SERVERDATA_AUTH=3
 error=""
 
 class RconException(Exception):
-  '''For passing Rcon module errors'''
+  '''Parent class for passing RCON module errors'''
+  pass
+
+class RconSocketException(RconException):
+  '''For passing RCON socket errors'''
+  pass
+
+class RconArgumentException(RconException):
+  '''For passing RCON argument'''
+  pass
+
+class RconProgrammingError(RconException):
+  '''For passing errors in logic RCON  (debug)'''
   pass
 
 class Rcon:
@@ -53,6 +65,13 @@ class Rcon:
     else:
       self.timeout=2
     self.error_stack=[]
+  
+  def _manage_socket_error(self, ret_val):
+    if self.connection:
+      self.connection.close()
+    self.connection=None
+    self.error_stack.append(ret_val)
+
 
   def connect(self):
     '''Resolve remote host and connect however possible (IPV6 compat)'''
@@ -63,16 +82,18 @@ class Rcon:
       try:
         self.connection=socket.socket(addr_fam, sock_type, proto)
       except socket.error as ret_val:
-        self.connection=None
-        self.error_stack.append(ret_val)
+        self._manage_socket_error(ret_val)
         continue
       try:
         self.connection.settimeout(self.timeout)
+      except(socket.error) as ret_val:
+        self._manage_socket_error(ret_val)
+        continue
+      try:
         self.connection.connect(server_addr)
       except(socket.error) as ret_val:
-        self.connection.close()
-        self.connection=None
-        self.error_stack.append(ret_val)
+        self._manage_socket_error(ret_val)
+        continue
       break
     if self.connection is None:
       raise RconException("Unable to connect: " + str(self.error_stack)) 
@@ -92,7 +113,8 @@ class Rcon:
     if not self.connection:
       try:
         self.connect()
-      except(rcon.error) as ret_val:
+      ## this needs more thorough testing, seeing as there isn
+      except(rcon.RconSocketError) as ret_val:
         self.error_stack.append(ret_val)
         raise RconException("Attempt to connect upon send failed." + str(self.error_stack)) 
         return False
