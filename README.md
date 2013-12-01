@@ -1,6 +1,8 @@
 python-rcon-mc
 ==============
 
+** This project is not yet released and is worked on time permitting**
+
 Genral Python API for interacting with RCON servers, specifically for use with Minecraft
   by Paws
 
