@@ -86,7 +86,7 @@ class Rcon:
         continue
       break
     if self.connection is None:
-      raise RconException("Unable to connect: " + str(self.error_stack)) 
+      raise RconException("{m}\n{s}".format(m="Unable to connect:", s=str(self.error_stack))) 
       self.connection=False 
       return False
     return True
@@ -104,25 +104,25 @@ class Rcon:
       try:
         self.connect()
       ## this needs more thorough testing, seeing as there isn
-      except(rcon.RconSocketError) as ret_val:
+      except(socket.error) as ret_val:
         self.error_stack.append(ret_val)
-        raise RconException("Attempt to connect upon send failed." + str(self.error_stack)) 
+        raise RconException("{m}\n{s}".format(m="Attempt to connect upon send failed.", s=str(self.error_stack))) 
         return False
     msg_len=len(msg)
     if msg_len > MAX_BODY_SIZE: 
-      raise RconException("Request message body too large. MAX=" + str(MAX_BODY_SIZE))
+      raise RconException("{m}\n{s}".format(m="Request message body too large. MAX=",s= str(MAX_BODY_SIZE)))
       return False
     size = msg_len + MIN_PACKET_SIZE
     self.id = self.id+1
     try: 
       packet = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) +  msg + NULL + NULL
     except(struct.error) as ret_val:
-      raise RconProgramExceptio("Unable to create TCP packet: " + str(error_stack))
+      raise RconProgramExceptio("{m}\n{s}".format(m="Unable to create TCP packet: ", s=str(error_stack)))
       return False
     try: 
       self.connection.send(packet)
     except(socket.error) as ret_val:
-      raise RconSocketException("Send failure: " + str(ret_val))
+      raise RconSocketException("{m}\n{s}".format(m="Send failure: ",s=str(error_stack)))
       return False
     if type == 2:
       try: 
@@ -130,7 +130,7 @@ class Rcon:
         packet = struct.pack('<i', 10) + struct.pack('<i', self.id) + struct.pack('<i', 0) +  NULL + NULL
         self.connection.send(packet)
       except(socket.error) as ret_val:
-        raise RconSocketException("Send failure: " + str(ret_val))
+        raise RconSocketException("{m}\n{s}".format(m="Send failure: " ,s=str(error_stack)))
         return False
     return True
 
@@ -144,12 +144,12 @@ class Rcon:
         packet = self.connection.recv(MAX_PACKET_SIZE)
       except(socket.error) as ret_val:
         self._manage_socket_error(ret_val)
-        raise RconSocketException("Failed to receive data from socket:" + str(self.error_stack))
+        raise RconSocketException("{m}\n{s}".format(m="Failed to receive data from socket:",s=str(self.error_stack)))
         return False
       packet_size=len(packet)
       msg_size = packet_size - MIN_PACKET_ACTUAL_SIZE 
       if msg_size > 0:
-        unpack_fmt = "<iii" + str(msg_size) + "sxx"
+        unpack_fmt = "{i}{m}{n}".format(i="<iii",m=str(msg_size),n="sxx")
       payload = struct.unpack(unpack_fmt, packet)
       psize  =payload[0]
       pid = payload[1]
