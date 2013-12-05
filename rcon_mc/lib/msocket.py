@@ -95,5 +95,5 @@ class msocket:
         break
     return packet
 
-  def manage(self)
+  def manage(self):
     '''High level whamadyme function'''
