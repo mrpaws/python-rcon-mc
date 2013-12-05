@@ -7,7 +7,7 @@
    https://github.com/mrpaws/python-rcon-mc
 '''
 
-import struct
+import socket
 
 class msocket:
   '''Manage client connections'''
@@ -61,7 +61,7 @@ class msocket:
       self.connection=False
       return self.connection
 
-  def send(self, msg):
+  def send(self, packet):
     '''issue a packet to the socket (sent as received)'''
     if not self.connection:
       try:
@@ -70,7 +70,7 @@ class msocket:
       except(socket.error) as ret_val:
         self.error_stack.append(ret_val)
         return False
-    msg_len=len(msg)
+    packet_size=len(packet)
     try: 
       self.connection.send(packet)
     except(socket.error) as ret_val:
@@ -88,12 +88,19 @@ class msocket:
       except(socket.error) as ret_val:
         self._manage_socket_error(ret_val)
         return False
-      cpacket_size = len(packet)
+      cpacket_size = len(cpacket)
       packet_size= packet_size + cpacket_size
-      packet = "%s%s".format(packet, packet) 
+      if 'packet' in locals():
+        packet = "%s%s".format(packet, cpacket) 
+      else:
+        packet = cpacket
       if cpacket_size < buflen:
         break
     return packet
 
   def manage(self):
     '''High level whamadyme function'''
+    self.connect()
+    self.send("GET /")
+    a = self.receive()
+    print a
