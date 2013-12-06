@@ -18,7 +18,7 @@ class msocket:
     if timeout:
       self.timeout=timeout[0] 
     else:
-      self.timeout=2
+      timeout=1
     self.error_stack=[]
   
   def _manage_socket_error(self, ret_val):
@@ -70,7 +70,6 @@ class msocket:
       ## this needs more thorough testing, seeing as there isn
       except(socket.error) as ret_val:
 	self._manage_socket_error(ret_val)
-	print str(error_stack)
         return False
     packet_size=len(packet)
     try: 
@@ -81,23 +80,28 @@ class msocket:
 
   def receive(self, *buflen):
     '''Read responses from the socket and return them'''
+    packet=""
     if not buflen:
       buflen=1024 ## rather arbitrary read amount
     packet_size=0
     while True:
-      try:
-        cpacket = self.connection.recv(buflen)
-      except(socket.error) as ret_val:
-        self._manage_socket_error(ret_val)
-        return False
-      cpacket_size = len(cpacket)
-      packet_size= packet_size + cpacket_size
-      if 'packet' in locals():
-        packet = packet + cpacket
-      else:
-        packet = cpacket
-      if cpacket_size < buflen:
-        break
+      print str(self.connection)
+      if self.connection is not None:
+        try:
+          cpacket = self.connection.recv(buflen)
+	  if not cpacket: break
+        except(socket.error) as ret_val:
+          self._manage_socket_error(ret_val)
+          print ret_val
+	  return False
+        cpacket_size = len(cpacket)
+        packet_size= packet_size + cpacket_size
+        if packet_size > 0:
+          packet = packet + cpacket
+        else:
+          packet = cpacket
+	continue
+      break
     return packet
 
   def manage(self):

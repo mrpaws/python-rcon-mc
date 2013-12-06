@@ -7,7 +7,7 @@ import rcon_mc.lib.msocket
 
 def test_msocket():
   ''' test low level socket functionality'''
-  server = rcon_mc.lib.msocket.msocket("www.google.com",80, 3)
+  server = rcon_mc.lib.msocket.msocket("www.google.com",80, 1)
   snd = server.send("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n")
   rcv = server.receive();
   if rcv is False:
