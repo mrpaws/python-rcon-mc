@@ -51,6 +51,7 @@ class msocket:
       break
     if self.connection is None:
       self.connection=False 
+      print str(error_stack)
       return False
     return True
 
@@ -68,7 +69,8 @@ class msocket:
         self.connect()
       ## this needs more thorough testing, seeing as there isn
       except(socket.error) as ret_val:
-        self.error_stack.append(ret_val)
+	self._manage_socket_error(ret_val)
+	print str(error_stack)
         return False
     packet_size=len(packet)
     try: 
@@ -91,7 +93,7 @@ class msocket:
       cpacket_size = len(cpacket)
       packet_size= packet_size + cpacket_size
       if 'packet' in locals():
-        packet = "%s%s".format(packet, cpacket) 
+        packet = packet + cpacket
       else:
         packet = cpacket
       if cpacket_size < buflen:
@@ -101,6 +103,6 @@ class msocket:
   def manage(self):
     '''High level whamadyme function'''
     self.connect()
-    self.send("GET /")
+    self.send("GET /\x00")
     a = self.receive()
     print a
