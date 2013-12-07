@@ -11,10 +11,16 @@ def test_msocket():
   snd = server.send("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n")
   rcv = server.receive();
   if rcv is False:
-    print "Fail"
+    print "Failed msocket.manage test..."
     return False
   print rcv
   return True
+
+def test_msocket_manage():
+  '''test msocket manage function'''
+  server = rcon_mc.lib.msocket.msocket("www.google.com",80,1)
+  answer = server.manage("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n")
+  print answer 
   
 
 
@@ -24,7 +30,7 @@ def main():
   response=server.rcon("/help 1")
   print response
   '''
-  test_msocket()
+  test_msocket_manage()
   
   exit
 

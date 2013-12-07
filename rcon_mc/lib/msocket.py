@@ -8,6 +8,12 @@
 '''
 
 import socket
+import select
+
+error=""
+
+class MSocketError(Exception):
+  pass
 
 class msocket:
   '''Manage client connections'''
@@ -26,6 +32,8 @@ class msocket:
       self.connection.close()
     self.connection=None
     self.error_stack.append(ret_val)
+    error = str(self.error_stack)
+    raise MSocketError(error)
 
   def connect(self):
     '''Resolve remote host and connect however possible (IPV6 compat)'''
@@ -51,7 +59,6 @@ class msocket:
       break
     if self.connection is None:
       self.connection=False 
-      print str(error_stack)
       return False
     return True
 
@@ -68,7 +75,7 @@ class msocket:
       try:
         self.connect()
       ## this needs more thorough testing, seeing as there isn
-      except(socket.error) as ret_val:
+      except(error) as ret_val:
 	self._manage_socket_error(ret_val)
         return False
     packet_size=len(packet)
@@ -79,34 +86,53 @@ class msocket:
     return True
 
   def receive(self, *buflen):
-    '''Read responses from the socket and return them'''
+    '''Read responses from the socket and return them as received. 
+       Runs as a blocking socket. 
+    '''
+    not_ready=0
     packet=""
     if not buflen:
       buflen=1024 ## rather arbitrary read amount
     packet_size=0
     while True:
-      print str(self.connection)
-      if self.connection is not None:
-        try:
-          cpacket = self.connection.recv(buflen)
-	  if not cpacket: break
-        except(socket.error) as ret_val:
-          self._manage_socket_error(ret_val)
-          print ret_val
-	  return False
-        cpacket_size = len(cpacket)
-        packet_size= packet_size + cpacket_size
-        if packet_size > 0:
-          packet = packet + cpacket
-        else:
-          packet = cpacket
-	continue
+      if self.connection is not None or False:
+        rdy = select.select([self.connection.fileno()], [], [], .3)[0]
+	if rdy:
+          try:
+            cpacket = self.connection.recv(buflen)
+	    if not cpacket: break
+          except(socket.error) as ret_val:
+            self._manage_socket_error(ret_val)
+	    return False
+          cpacket_size = len(cpacket)
+          packet_size= packet_size + cpacket_size
+          if packet_size > 0:
+            packet = packet + cpacket
+          else:
+            packet = cpacket
+	  continue
+	else:
+	  not_ready = not_ready + 1
+	  if not_ready > 2:
+	    break
       break
     return packet
 
-  def manage(self):
-    '''High level whamadyme function'''
-    self.connect()
-    self.send("GET /\x00")
-    a = self.receive()
-    print a
+  def manage(self, packet):
+    '''High level whamadyne function for sending and receiving a message. Disconnects socket on exit'''
+    try:
+      self.connect()
+    except(error):
+      print error
+      return False
+    try:
+      self.send(packet)
+    except(error): 
+      print error
+      return False 
+    try:
+      response = self.receive()
+    except(error):
+      print error
+      return False
+    return response
