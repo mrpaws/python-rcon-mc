@@ -10,7 +10,7 @@
 '''
 
 import struct
-import socket
+import msocket
 
 '''Module Declarations:'''
 NULL='\x00' ## hex for C null terminator
@@ -28,154 +28,45 @@ SERVERDATA_AUTH=3
 error=""
 
 class RconException(Exception):
-  '''Parent class for passing RCON module errors'''
+  '''For passing RCON module exceptions'''
   pass
 
-class RconSocketException(RconException):
-  '''For passing RCON socket errors'''
-  pass
-
-class RconArgumentException(RconException):
-  '''For passing RCON argument'''
-  pass
-
-class RconProgramException(RconException):
-  '''For passing errors in logic RCON  (debug)'''
-  pass
-
-class Rcon:
-  '''Rcon class object for connection and communication'''
-  def __init__(self, host, port, password, *timeout ): 
+class rcon:
+  '''RCON protocol communication'''
+ def __init__(self, host, port, password):
     self.host=host
     self.port=port
     self.password=password
-    self.id=1
-    self.connection=False
-    if timeout:
-      self.timeout=timeout[0] 
-    else:
-      self.timeout=2
     self.error_stack=[]
-  
-  def _manage_socket_error(self, ret_val):
-    if self.connection:
-      self.connection.close()
-    self.connection=None
-    self.error_stack.append(ret_val)
-
-  def connect(self):
-    '''Resolve remote host and connect however possible (IPV6 compat)'''
-    if self.connection:
-      return self.connection
-    for con in socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC, socket.SOCK_STREAM):
-      addr_fam, sock_type, proto, canonical_name, server_addr = con
-      try:
-        self.connection=socket.socket(addr_fam, sock_type, proto)
-      except socket.error as ret_val:
-        self._manage_socket_error(ret_val)
-        continue
-      try:
-        self.connection.settimeout(self.timeout)
-      except(socket.error) as ret_val:
-        self._manage_socket_error(ret_val)
-        continue
-      try:
-        self.connection.connect(server_addr)
-      except(socket.error) as ret_val:
-        self._manage_socket_error(ret_val)
-        continue
-      break
-    if self.connection is None:
-      raise RconException("{m}\n{s}".format(m="Unable to connect:", s=str(self.error_stack))) 
-      self.connection=False 
+    try: 
+      self.connection = msocket.msocket(self.host, self.port)
+    except(msocket.error) as ret_val:
+      _manage_rcon_error(ret_val)
       return False
+
+  def _manage_rcon_error(self, ret_val):
+    self.error_stack.append(ret_val)
+    error=str(error_stack)
+    raise RconException(error_stack)
+
+  def _connect(self):
+    try:
+     con = self.connection.connect()
+    except(msocket.error) as ret_val:
+      if con is False:
+        _manage_rcon_error(ret_val)
+        return false
     return True
 
-  def disconnect(self):
-    '''Disconnect from remote host'''
-    if self.connection: 
-      self.connection.close()
-      self.connection=False
-      return self.connection
+  def _craft_packet(self, msg):
+     '''Crafts RCON packet)
 
-  def send(self, type, msg):
-    '''Package and issue a packet to the socket'''
+  def send(self, msg):
+    '''Sends a command to the RCON server, does not necessasarily
+       disconnect. Returns the response.
+    '''
     if not self.connection:
       try:
         self.connect()
-      ## this needs more thorough testing, seeing as there isn
-      except(socket.error) as ret_val:
-        self.error_stack.append(ret_val)
-        raise RconException("{m}\n{s}".format(m="Attempt to connect upon send failed.", s=str(self.error_stack))) 
+      except(error) as ret_val:
         return False
-    msg_len=len(msg)
-    if msg_len > MAX_BODY_SIZE: 
-      raise RconException("{m}\n{s}".format(m="Request message body too large. MAX=",s= str(MAX_BODY_SIZE)))
-      return False
-    size = msg_len + MIN_PACKET_SIZE
-    self.id = self.id+1
-    try: 
-      packet = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) +  msg + NULL + NULL
-    except(struct.error) as ret_val:
-      raise RconProgramExceptio("{m}\n{s}".format(m="Unable to create TCP packet: ", s=str(error_stack)))
-      return False
-    try: 
-      self.connection.send(packet)
-    except(socket.error) as ret_val:
-      raise RconSocketException("{m}\n{s}".format(m="Send failure: ",s=str(error_stack)))
-      return False
-    if type == 2:
-      try: 
-        ''' send an empty packet after each command to use as a terminator for a command response transaction'''
-        packet = struct.pack('<i', 10) + struct.pack('<i', self.id) + struct.pack('<i', 0) +  NULL + NULL
-        self.connection.send(packet)
-      except(socket.error) as ret_val:
-        raise RconSocketException("{m}\n{s}".format(m="Send failure: " ,s=str(error_stack)))
-        return False
-    return True
-
-  def receive(self):
-    '''Read responses from the socket and unpack them'''
-    msg=""
-    while 1:
-      payload = ""
-      try:
-        unpack_fmt="<iiixx" ## empty body packet format
-        packet = self.connection.recv(MAX_PACKET_SIZE)
-      except(socket.error) as ret_val:
-        self._manage_socket_error(ret_val)
-        raise RconSocketException("{m}\n{s}".format(m="Failed to receive data from socket:",s=str(self.error_stack)))
-        return False
-      packet_size=len(packet)
-      msg_size = packet_size - MIN_PACKET_ACTUAL_SIZE 
-      if msg_size > 0:
-        unpack_fmt = "{i}{m}{n}".format(i="<iii",m=str(msg_size),n="sxx")
-      payload = struct.unpack(unpack_fmt, packet)
-      psize  =payload[0]
-      pid = payload[1]
-      ptype = payload[2]
-      if ptype == SERVERDATA_AUTH_RESPONSE:
-        msg=""
-        break
-      if msg_size > 0:
-        pmsg = payload[3] 
-        ''' The following check is an unfortunate workaround because
-            Minecraft does not seem to conform to Source RCON Protocol.
-            Protocol states that the remote system should mirror the 
-            client's SERVER_DATA_RESPONSE request, which is the
-            recommended methofd for testing for multi-packet responses. 
-            Minecraft will return "Unknown request 0. Open issue on this
-            Github project repo
-        '''
-         
-        if pmsg == "Unknown request 0":
-          break
-        msg = msg + pmsg
-    return msg
-
-  def rcon(self, command):
-    '''Higher level function that manages message id matching'''
-    self.send(SERVERDATA_AUTH,self.password) ## authenticate
-    self.receive() 
-    self.send(SERVERDATA_EXECCOMMAND,command) ## command
-    return self.receive()
