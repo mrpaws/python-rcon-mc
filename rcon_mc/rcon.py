@@ -7,13 +7,14 @@
    https://github.com/mrpaws/python-rcon-mc
  Protocol: 
    https://developer.valvesoftware.com/wiki/Source_RCON_Protocol
+     -- adapted for use with minecraft, but a great starter
 '''
 import struct
 import lib.msocket as msocket
 
 ''' 
-   "Not authenticated" response:
-	\n\x00\x00\x00\xff\xff\xff\xff\x02\x00\x00\x00\x00\x00
+   "Not authenticated" and "Authenticated" responses:
+     '\n\x00\x00\x00\xff\xff\xff\xff\x02\x00\x00\x00\x00\x00'
 '''
 
 
@@ -36,53 +37,74 @@ class RconException(Exception):
   '''For passing RCON module exceptions'''
   pass
 
-class rcon:
-  '''RCON protocol communication'''
+class client:
+  '''Minecraft RCON protocol communication'''
   def __init__(self, host, port, password):
     self.host=host
     self.port=port
     self.password=password
     self.error_stack=[]
     self.id=0
+    self.authenticated = False
     try: 
       self.connection = msocket.msocket(self.host, self.port)
     except(msocket.error) as ret_val:
-      _manage_rcon_error(ret_val)
+      self._manage_rcon_error(ret_val)
       return False
 
   def _manage_rcon_error(self, ret_val):
     self.error_stack.append(ret_val)
-    error=str(error_stack)
-    raise RconException(error_stack)
+    error=str(self.error_stack)
+    raise RconException(self.error_stack)
 
   def _connect(self):
+    '''private connect method'''
     try:
      con = self.connection.connect()
     except(msocket.error) as ret_val:
       if con is False:
-        _manage_rcon_error(ret_val)
+        self._manage_rcon_error(ret_val)
         return false
     return True
 
-  def _craft_packet(self, type, msg):
-    '''Crafts RCON packet'''
+  def _pack_data(self, type, msg):
+    '''private method for crafting RCON requests'''
     if not msg:
       msg=""
     msg_len=len(msg)
     size = msg_len + MIN_PACKET_SIZE
     if msg_len > MAX_BODY_SIZE:
-      _manage_rcon_error("{m}\n{s}".format(m="Request message body too large. MAX=",
+      self._manage_rcon_error("{m}\n{s}".format(m="Request message body too large. MAX=",
         s= str(MAX_BODY_SIZE)))
       return False
     try:
-      packet = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) + msg + NULL + NULL
+      request = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) + msg + NULL + NULL
     except(struct.error) as ret_val:
-      _manage_rcon_error("{m}\n{s}".format(m="Unable to pack data into TCP packet: ", s=str(error_stack)))
+      self._manage_rcon_error("{m}\n{s}".format(m="Unable to pack data into TCP request: ", s=str(self.error_stack)))
       return False
-    return packet
+    return request
+
+  def _unpack_data(self, response):
+     '''private method to unpack the data and return the ascii message'''
+     response_size=len(response)
+     msg_size = response_size - MIN_PACKET_ACTUAL_SIZE
+     if response_size == 0:
+       self._manage_rcon_error("Zero length response from server") 
+       return False
+     unpack_fmt = "{i}{m}{n}".format(i="<iii",m=str(msg_size),n="sxx")
+     try: 
+       payload = struct.unpack(unpack_fmt, response) 
+     except(struct.error) as ret_val:
+       self._manage_rcon_error(ret_val)
+       return False
+     size  =payload[0]
+     id = payload[1]
+     type = payload[2]
+     msg = payload[3]
+     return (id, type, msg)
 
   def _send(self, type, msg):
-    '''handles send logic.. maybe not necessary'''
+    '''private send method for handling the dirty work in sending a request'''
     if not self.connection:
       try:
         self._connect()
@@ -90,22 +112,72 @@ class rcon:
         return False
       return False
     try:
-      packet = self._craft_packet(type, msg)
+      request = self._pack_data(type, msg)
     except(error) as ret_val:
       return False
     try:
-      response = self.connection.manage(packet)
+      response = self.connection.manage(request)
     except(msocket.error) as ret_val:
-      _manage_rcon_error(ret_val)
+      self._manage_rcon_error(ret_val)
       return false
     if not response:
-      _manage_rcon_error("Empty response from server")
+      self._manage_rcon_error("Empty response from server")
+      return false
+    try:
+      response  = self._unpack_data(response)
+    except(error) as ret_val:
       return false
     return response
+   
+  def _authenticate(self):
+    '''private method to authenticate with server'''
+    try:
+      response = self._send(SERVERDATA_AUTH, self.password)
+    except(error) as ret_val:
+      return False
+    if (response[0] == -1 ):
+      _manage_rcon_error("Authentication failure")
+      return False
+    self.authenticated = True
+    return True
 
   def send(self, msg):
-    '''Sends a command to the RCON server, does not necessasarily
+    '''API user function Sends a command to the RCON server, does not necessasarily
        disconnect. Returns the response.
-       !!!DONT FORGET TO INCREMENT ID HERE!!!, OR... revert your decision
-       to put it in this function instead of the private metho
     '''
+    self.id = self.id + 1
+    if not self.authenticated:
+      try:
+        self._authenticate()
+      except(error) as ret_val:
+        return False
+    try:
+      response = self._send(SERVERDATA_EXECCOMMAND, msg)
+    except(error) as ret_val:
+      return False
+    id = response[0]
+    type = response[1]
+    response_msg = response[2]
+    if (response[0] == -1): 
+      self.authenticated = False
+      try:
+        self._authenticate()
+      except(error) as ret_val:
+        return False
+      try:
+        response = self._send(SERVERDATA_EXECCOMMAND, msg)
+      except(error) as ret_val:
+        return False
+    return response_msg
+
+  def disconnect(self):
+    '''hook into msocket to allow API users to easily disconnect'''
+    try: 
+      self.connection.disconnect()
+    except(msocket.error) as ret_val:
+      self._manage_rcon_error(ret_val)
+      return False
+    return False
+
+  def __del__(self):
+    self.disconnect()
