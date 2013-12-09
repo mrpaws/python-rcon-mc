@@ -1,21 +1,18 @@
 python-rcon-mc
 ==============
 
-** This project is not yet released and is worked on time permitting**
-
 Genral Python API for interacting with RCON servers, specifically for use with Minecraft
-
-
-** This is primarily a learning project**
-
+** started as a  learning project**
 
 Features
 =====
-  - RCON API
-  - Minecraft Server (FTB/Vanilla) RCON API
-  - IPV6 compatability
-  - Multi-packet responses
+  - Python Minecraft RCON API
+  - Reusable client socket module (rcon_mc.lib.msocket)
+  - IPV6 compatability 
+  - Keep-Alive functionality
+  - Minimal reauthentication message to reduce wire spam
   - high level functions for ease of use
+  - typical server command class for super ease of use (TBI)
 
 
 
@@ -28,17 +25,18 @@ The code within is written by somewhat of a Python newbie and is more of a fun l
 The primary objectives are to spend time:
  - Coding in python
  - Learning about core python modules
- - Refreshing networking routine
- - 
-And less importantly:
- - Deliver a useful tool for another minecraft deploy manager
- - Produce some reusables for a personal standard library
+ - Refreshing networking know-how
+ 
 
 Testing
 ========
 A wrapper script - test.py - is provided to demonstrate general usage and test functionality on your system/Python.  Below are individual confirmed test cases.
 
   2.7.3 - Linux 3.2.0-4-amd64 #1 SMP Debian 3.2.51-1 x86_64 GNU/Linux
+  
+RCON Implementation
+=========
+Source's RCON Protocol documents (see the wiki) were used for general guidance, however RCON "protocols" are not typically implemented verbatim with this protocol.  RCON tends to differ from implementation to implemetnation.  For example, handling multi-packet responses is typically done by following each send with an empty SERVERDATA_RESPONSE packet, because the server is designed to reflect this and - because the server also returns the messages in the order they were received - this could be used to determine the last packet in a sequence of response packets.  Minecraft's implementation simply returns "Unknown request 0".  However, the minecraft implentation does set the 'id' field of the response to -1 upon auth failures and does require the same packet structure and command codes.  Because of these nuances, this particular impmentation of RCON is only really suitable for minecraft, at least for the moment.  However, minimal work should be necessary to match other implementation's requirements.  
 
 **Security**
 ============
