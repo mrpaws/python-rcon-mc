@@ -25,12 +25,11 @@ def test_msocket_manage():
 
 
 def main():
-  '''
-  server=rcon_mc.rcon.Rcon("localhost", 25575, "lol")
-  response=server.rcon("/help 1")
+  ''' test module functionality helper'''
+  client=rcon_mc.rcon.client("localhost", 25575, "lol")
+  response=client.send("/help 1")
   print response
-  '''
-  test_msocket_manage()
+  #test_msocket_manage()
   
   exit
 

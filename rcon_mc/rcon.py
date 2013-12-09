@@ -12,12 +12,6 @@
 import struct
 import lib.msocket as msocket
 
-''' 
-   "Not authenticated" and "Authenticated" responses:
-     '\n\x00\x00\x00\xff\xff\xff\xff\x02\x00\x00\x00\x00\x00'
-'''
-
-
 '''Module Declarations:'''
 NULL='\x00' ## hex for C null terminator
 MIN_PACKET_SIZE=10  # 4(id)+4(type)+1(body)+1(empty string)
@@ -78,7 +72,7 @@ class client:
         s= str(MAX_BODY_SIZE)))
       return False
     try:
-      request = struct.pack('<i', size) + struct.pack('<i', self.id) + struct.pack('<i', type) + msg + NULL + NULL
+      request = "{s}{i}{t}{m}{n1}{n2}".format(s=struct.pack('<i', size), i=struct.pack('<i', self.id), t=struct.pack('<i', type),  m=msg , n1=NULL , n2=NULL)
     except(struct.error) as ret_val:
       self._manage_rcon_error("{m}\n{s}".format(m="Unable to pack data into TCP request: ", s=str(self.error_stack)))
       return False
