@@ -24,7 +24,7 @@ class msocket:
     if timeout:
       self.timeout=timeout[0] 
     else:
-      timeout=1
+      self.timeout=1
     self.error_stack=[]
   
   def _manage_socket_error(self, ret_val):
@@ -119,7 +119,7 @@ class msocket:
     return packet
 
   def manage(self, packet):
-    '''High level whamadyne function for sending and receiving a message. Disconnects socket on exit'''
+    '''High level whamadyne function for sending and receiving a message. Does not explicitily disconnect'''
     try:
       self.connect()
     except(error):
