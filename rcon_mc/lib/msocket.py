@@ -9,6 +9,7 @@
 
 import socket
 import select
+from types import *
 
 error=""
 
@@ -26,6 +27,9 @@ class msocket:
     else:
       self.timeout=1
     self.error_stack=[]
+    assert type(self.host) is StringType, "{m}{h}".format(m="hostname is not a string:", h=self.host)
+    assert type(self.port) is IntType, "{m}{p}".format(m="port is not a number:", p=self.port)
+    assert type(self.timeout) is IntType, "{m}{t}".format(m="timeout is not a number:", t=self.timeout)
   
   def _manage_socket_error(self, ret_val):
     if self.connection:
