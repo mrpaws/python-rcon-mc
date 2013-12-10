@@ -56,9 +56,12 @@ class msocket:
       except(socket.error) as ret_val:
         self._manage_socket_error(ret_val)
         continue
+      if not self.connection:
+       continue
       break
-    if self.connection is None:
+    else:
       self.connection=False 
+      raise MSocketError("{m}\n{e}".format(m="Unable to Connect", e=str(self.error_stack)))
       return False
     return True
 
