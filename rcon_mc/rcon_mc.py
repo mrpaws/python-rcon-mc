@@ -1,3 +1,11 @@
+''' 
+               ****** WIP ******
+   You probably want rcon.py for elementary usage
+   This is a work in progress to implement somt
+   minecraft rcon commands as a class, to even
+   further simplify using this package
+'''
+
 #!/usr/bin/env python
 '''
  rcon_mc.py - Minecraft RCON helper interface
