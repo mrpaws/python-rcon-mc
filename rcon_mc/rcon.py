@@ -135,7 +135,7 @@ class client:
     except(error) as ret_val:
       return False
     if (response[0] == -1 ):
-      _manage_rcon_error("Authentication failure")
+      self._manage_rcon_error("Authentication failure")
       return False
     self.authenticated = True
     return True
