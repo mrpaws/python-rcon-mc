@@ -170,6 +170,8 @@ class client:
         except Exception:
             return False
 
+        response_msg = response[2]
+
         if response[0] == -1:
             self.authenticated = False
             try:
